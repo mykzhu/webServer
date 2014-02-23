@@ -113,6 +113,10 @@ int main(int argc, void **argv)
             {
               strncpy(params->listenIpAddress, value, strlen(value));
             }
+            else if (0 == strncmp("defpage", variable, 7)) 
+            {
+              strncpy(params->defPage, value, strlen(value));
+            }
             else if (0 == strncmp("workDir", variable, 7)) 
             {
               strncpy(params->workDir, value, strlen(value));
@@ -121,9 +125,10 @@ int main(int argc, void **argv)
         }
       };
 
-    sprintf(msg, " port = [%s]\n address = [%s]\n work directory = [%s]\n", 
+    sprintf(msg, " port = [%s]\n address = [%s]\n default webpage = [%s]\n work directory = [%s]\n", 
         params->listenPort,
         params->listenIpAddress,
+        params->defPage,
         params->workDir
     );
     fclose(file);
@@ -134,11 +139,13 @@ int main(int argc, void **argv)
     (*log_print)("Culd'n open config file");
     strncpy(params->listenPort, "8080", 4);
     strncpy(params->listenIpAddress, "127.0.0.1", 9);
+    strncpy(params->workDir,"index.html",5);
     strncpy(params->workDir,"site/",5);
 
-    sprintf(msg, " port = [%s]\n address = [%s]\n work directory = [%s]\n", 
+    sprintf(msg, " port = [%s]\n address = [%s]\n default webpage = [%s]\n work directory = [%s]\n", 
         params->listenPort,
         params->listenIpAddress,
+        params->defPage,
         params->workDir
     );
     (*log_print)(msg);

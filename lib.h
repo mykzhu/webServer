@@ -20,6 +20,7 @@ HYSTORY.....: DATE            COMMENT
 #define _portDigits 6
 #define _addressLength 16
 #define _dirLength 32
+#define _defPageLength 32
 #define _confStringLength 128
 
 #define SERVER "Server: SimpleWeb\n"
@@ -30,6 +31,7 @@ HYSTORY.....: DATE            COMMENT
 struct parameters {
   char listenPort[_portDigits]; 
   char listenIpAddress[_addressLength]; // IP for client connections
+  char defPage[_defPageLength];
   char workDir[_dirLength];
 };
 

@@ -4,5 +4,8 @@ address=192.168.1.3
 # port number for listening
 port=8080
 
+# default web page
+defpage=index.html
+
 # work directory of server
 workDir=site/
