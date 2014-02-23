@@ -21,29 +21,7 @@ HYSTORY.....: DATE            COMMENT
 #include <errno.h> 
 #include <fcntl.h>
 #include <time.h>
-
-/*---------------------PUBLIC DECLARATION----------------------------------*/
-#define SERVER "Server: SimpleWeb\n"
-#define CONTENT "Content-Type: text/html\r\n"
-#define CONTENT2 "Content-Type: image/jpeg\r\n"
-
-
-
-struct {
-        char *ext;
-        char *filetype;
-} extensions [] = {
-        {"gif", "image/gif" },  
-        {"jpg", "image/jpeg"}, 
-        {"jpeg","image/jpeg"},
-        {"png", "image/png" },  
-        {"zip", "image/zip" },  
-        {"gz",  "image/gz"  },  
-        {"tar", "image/tar" },  
-        {"htm", "text/html" },  
-        {"html","text/html" },  
-        {"css", "text/css"  },
-        {0,0} };
+#include "lib.h"
 
 /*------------------------PUBLIC FUNCTION----------------------------------*/
 /****************************************************************************
@@ -69,9 +47,9 @@ void get_time(char *msg, short flag)
     if(flag == 1)
     {
       gettimeofday(&tv, NULL);
-      sprintf (msg,"[%04d-%02d-%02d %02d:%02d:%02d.%06u]",
+      sprintf (msg,"[%04d-%02d-%02d %02d:%02d:%02d.%06u %5.d]",
         tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
-        tm->tm_hour, tm->tm_min, tm->tm_sec,(int)tv.tv_usec);
+        tm->tm_hour, tm->tm_min, tm->tm_sec,(int)tv.tv_usec, getpid());
     }
     else
     {
@@ -178,14 +156,14 @@ DESCRIPTION....: Function which receives HTTP requests, parces them and sends
 ARGUMENTS......: - new_socket - socket ID
 RETURNS........: None
 ****************************************************************************/
-int connection(int new_socket)
+int connection(int new_socket, struct parameters* params)
 {
     int bufsize = 1024,
     i,j,buflen, len, file_fd;    
     char *buffer = malloc(bufsize);
     char * fstr; 
     long ret;
-    char path[] = "site/"; 
+    //char path[] = "site/"; 
 
     if(recv(new_socket, buffer, bufsize, 0) == -1)
     {
@@ -194,6 +172,7 @@ int connection(int new_socket)
     }
     else
     {
+      log_print("Received data:");
       log_print(buffer);
 
       if(strncmp(buffer,"GET ",4)&& strncmp(buffer,"get ",4))
@@ -228,11 +207,13 @@ int connection(int new_socket)
             {
               if (i<5)
               {
-                buffer[i+strlen(path)] = path[i];
+                //buffer[i+strlen(path)] = path[i];
+                buffer[i+strlen(params->workDir)] = params->workDir[i];
               }
               else
               {
-                buffer[i+strlen(path)] = buffer[i];
+                //buffer[i+strlen(path)] = buffer[i];
+                buffer[i+strlen(params->workDir)] = buffer[i];
               }
             }
           }
@@ -278,4 +259,4 @@ int connection(int new_socket)
       return 0;
 }
 //---------------------------------------------------------------------------
-//End of file lib.c:
+//End of file lib.c

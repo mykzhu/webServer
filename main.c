@@ -19,12 +19,8 @@ HYSTORY.....: DATE            COMMENT
 #include <sys/socket.h> /*  socket definitions        */
 #include <errno.h> 
 #include <string.h> 
-/*---------------------PUBLIC DECLARATION----------------------------------*/
-#define PORT "8080" // the port users will be connecting to
-
-#define BACKLOG 10  // how many pending connections queue will hold
-
-//---------------------------------------------------------------------------
+#include <unistd.h> 
+#include "lib.h"
 
 /*------------------------PUBLIC FUNCTION----------------------------------*/
 /****************************************************************************
@@ -36,8 +32,9 @@ RETURNS........:
 ****************************************************************************/
 int main(int argc, void **argv)
 {
-  char *error; 
+  char *error, *variable, *value; 
   char clientIpAddress[16]; 
+  char *buf = (char*) calloc(1, _confStringLength);
   char msg[255];
   memset(clientIpAddress, '\0', 16);
   void *libHandle;  
@@ -50,12 +47,18 @@ int main(int argc, void **argv)
       clientStructSize =0,
       pid;
 
+  FILE *file;
+
   struct addrinfo *hints, *servinfo, *struct_point;
   struct sockaddr_in *client;
   socklen_t sin_size;
 
+  struct parameters *params = (struct parameters *) calloc(1, sizeof(struct parameters));
+  //params->listenIpAddress = (char*) calloc(1, _addressLength);
+  //params->workDir = (char*) calloc(1, _dirLength);
+
   void (*log_print) (char*); 
-  int (*connection) (int);
+  int (*connection) (int, struct parameters *);
  
   libHandle = dlopen("./lib.so", RTLD_NOW); 
 
@@ -78,7 +81,70 @@ int main(int argc, void **argv)
     fprintf(stderr, "Error during call connection %s\n", error); 
     exit(EXIT_FAILURE); 
   } 
-  
+  //------------------------------------------------------------------
+  // reading config file
+  //------------------------------------------------------------------
+  file = fopen("./config", "r");
+  if (NULL != file)
+  {
+    (*log_print)("Reading config file");
+     while (NULL != fgets(buf, _confStringLength, file)) 
+     {
+        if ('\n' == buf[strlen(buf)-1]) 
+        {
+          buf[strlen(buf)-1] = '\0';
+        }
+        if (('#' == buf[0]) || ('=' == buf[0])) 
+        {
+          continue;
+        }
+        if ((2 < strlen(buf)) && ('=' != buf[strlen(buf)-1])) 
+        {
+          if (NULL != strchr(buf, '=')) 
+          {
+            variable = strtok(buf, "=");
+            value = strtok(NULL, "=");
+
+            if (0 == strncmp("port", variable, 4)) 
+            {
+              strncpy(params->listenPort, (value), strlen(value));
+            }
+            else if (0 == strncmp("address", variable, 7)) 
+            {
+              strncpy(params->listenIpAddress, value, strlen(value));
+            }
+            else if (0 == strncmp("workDir", variable, 7)) 
+            {
+              strncpy(params->workDir, value, strlen(value));
+            }
+          }
+        }
+      };
+
+    sprintf(msg, " port = [%s]\n address = [%s]\n work directory = [%s]\n", 
+        params->listenPort,
+        params->listenIpAddress,
+        params->workDir
+    );
+    fclose(file);
+    (*log_print)(msg);
+  }
+  else
+  {
+    (*log_print)("Culd'n open config file");
+    strncpy(params->listenPort, "8080", 4);
+    strncpy(params->listenIpAddress, "127.0.0.1", 9);
+    strncpy(params->workDir,"site/",5);
+
+    sprintf(msg, " port = [%s]\n address = [%s]\n work directory = [%s]\n", 
+        params->listenPort,
+        params->listenIpAddress,
+        params->workDir
+    );
+    (*log_print)(msg);
+  }
+  //------------------------------------------------------------------
+
   (*log_print)("Server was started");
 
   hints = (struct addrinfo*) calloc(1, sizeof(struct addrinfo));
@@ -87,7 +153,8 @@ int main(int argc, void **argv)
   hints->ai_protocol = 6;
   hints->ai_flags = AI_PASSIVE;
 
-  if((iret_value = getaddrinfo(NULL, PORT, hints, &servinfo)) != 0)
+  if((iret_value = getaddrinfo(params->listenIpAddress, params->listenPort, 
+                               hints, &servinfo)) != 0)
   {
     sprintf(msg, "Error getting addres: %s\n", gai_strerror(iret_value));
     (*log_print)(msg);
@@ -143,8 +210,8 @@ int main(int argc, void **argv)
     close(isockId);
     dlclose(libHandle); 
     exit(EXIT_FAILURE);
-  }
-  
+  } 
+
   //TODO: add reap all dead processes
 
   (*log_print)("Server waiting for connections...");
@@ -172,7 +239,7 @@ int main(int argc, void **argv)
       if(0 == pid)
       { // this is child's context
         close(isockId);//child doesn't need the listener
-        if((*connection)(new_id) == -1)
+        if((*connection)(new_id, params) == -1)
         {
           free(hints);
           close(new_id);
