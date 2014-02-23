@@ -90,17 +90,17 @@ RETURNS........: None
 ****************************************************************************/
 void log_print(char* msg) 
 {
-	int fd;
+  int fd;
   char time_msg[40];
 
-	if((fd = open("nweb.log", O_CREAT| O_WRONLY | O_APPEND,0644)) >= 0)
-	{
+  if((fd = open("nweb.log", O_CREAT| O_WRONLY | O_APPEND,0644)) >= 0)
+  {
     get_time(time_msg, 1);
-		(void)write(fd,time_msg,strlen(time_msg));
-		(void)write(fd,msg,strlen(msg)); 
-		(void)write(fd,"\n",1);      
-		(void)close(fd);
-	}
+    (void)write(fd,time_msg,strlen(time_msg));
+    (void)write(fd,msg,strlen(msg)); 
+    (void)write(fd,"\n",1);      
+    (void)close(fd);
+  }
 }
 
 /****************************************************************************
@@ -112,21 +112,21 @@ RETURNS........: None
 ****************************************************************************/
 void notGet(int sock)
 {  
-	char buffer[1024];
-	   
-	//Send HTTP Response line by line
+  char buffer[1024];
+     
+  //Send HTTP Response line by line
   strcpy(buffer, "HTTP/1.0 501 Method Not Implemented\r\n");
   write(sock, buffer, strlen(buffer));
-	strcpy(buffer, SERVER);
+  strcpy(buffer, SERVER);
   write(sock, buffer, strlen(buffer));
-	strcpy(buffer, CONTENT);
-	write(sock, buffer, strlen(buffer));
-	strcpy(buffer, "\r\n");
-	write(sock, buffer, strlen(buffer));
-	strcpy(buffer, "<html>\n<head>\n<title>Method Not Implemented</title>\n</head>\r\n");
-	write(sock, buffer, strlen(buffer));
-	strcpy(buffer, "<body>\n<p>501 HTTP request method not supported.</p>\n</body>\n</html>\r\n");
-	write(sock, buffer, strlen(buffer));
+  strcpy(buffer, CONTENT);
+  write(sock, buffer, strlen(buffer));
+  strcpy(buffer, "\r\n");
+  write(sock, buffer, strlen(buffer));
+  strcpy(buffer, "<html>\n<head>\n<title>Method Not Implemented</title>\n</head>\r\n");
+  write(sock, buffer, strlen(buffer));
+  strcpy(buffer, "<body>\n<p>501 HTTP request method not supported.</p>\n</body>\n</html>\r\n");
+  write(sock, buffer, strlen(buffer));
 }
 
 /****************************************************************************
@@ -180,42 +180,42 @@ RETURNS........: None
 ****************************************************************************/
 int connection(int new_socket)
 {
-	   int bufsize = 1024,
-		i,j,buflen, len, file_fd;    
-   	char *buffer = malloc(bufsize);
-   	char * fstr; 
-   	long ret;
-   	char path[] = "site/"; 
+    int bufsize = 1024,
+    i,j,buflen, len, file_fd;    
+    char *buffer = malloc(bufsize);
+    char * fstr; 
+    long ret;
+    char path[] = "site/"; 
 
-   	if(recv(new_socket, buffer, bufsize, 0) == -1)
-   	{
-   		fprintf(stderr, "Error read socket: %s\n", strerror(errno));
-   		return -1;
-   	}
-   	else
-   	{
+    if(recv(new_socket, buffer, bufsize, 0) == -1)
+    {
+      fprintf(stderr, "Error read socket: %s\n", strerror(errno));
+      return -1;
+    }
+    else
+    {
       log_print(buffer);
 
-    	if(strncmp(buffer,"GET ",4)&& strncmp(buffer,"get ",4))
-    	{
-			  log_print("Only simple GET operation supported");
-			  notGet(new_socket);
-			  return 0;
-		  }
-		  else
-		  {
-			  for(i=4;i<bufsize;i++) 
-			  { /* null terminate after the second space to ignore extra stuff */
-				  if(buffer[i] == ' ') 
-				  {
+      if(strncmp(buffer,"GET ",4)&& strncmp(buffer,"get ",4))
+      {
+        log_print("Only simple GET operation supported");
+        notGet(new_socket);
+        return 0;
+      }
+      else
+      {
+        for(i=4;i<bufsize;i++) 
+        { /* null terminate after the second space to ignore extra stuff */
+          if(buffer[i] == ' ') 
+          {
             buffer[i] = 0;
             break;
           }
-	      }
+        }
 
-	      for(j=0;j<i-1;j++)
-				  if(buffer[j] == '.' && buffer[j+1] == '.')
-				  {
+        for(j=0;j<i-1;j++)
+          if(buffer[j] == '.' && buffer[j+1] == '.')
+          {
             log_print("Parent directory (..) path names not supported");
             return 0;
           }
@@ -227,40 +227,40 @@ int connection(int new_socket)
             for (i=strlen(buffer);i>=0;i--)
             {
               if (i<5)
-            	{
-            	  buffer[i+strlen(path)] = path[i];
-            	}
-            	else
-            	{
-            		buffer[i+strlen(path)] = buffer[i];
-            	}
+              {
+                buffer[i+strlen(path)] = path[i];
+              }
+              else
+              {
+                buffer[i+strlen(path)] = buffer[i];
+              }
             }
           }
 
-        	buflen=strlen(buffer);
-        	fstr = (char *)0;
+          buflen=strlen(buffer);
+          fstr = (char *)0;
 
-        	for(i=0;extensions[i].ext != 0;i++) 
-        	{
+          for(i=0;extensions[i].ext != 0;i++) 
+          {
             len = strlen(extensions[i].ext);
             if( !strncmp(&buffer[buflen-len], extensions[i].ext, len)) 
             {
               fstr =extensions[i].filetype;
               break;
             }
-        	}
+          }
 
-        	if(fstr == 0) 
-        	{
-        		log_print("file extension type not supported");
-        		return 0;
-        	}
+          if(fstr == 0) 
+          {
+            log_print("file extension type not supported");
+            return 0;
+          }
 
-        	if(( file_fd = open(&buffer[5],O_RDONLY)) == -1) 
-        	{
-        	 	log_print("failed to open file");
-        	 	notFound(new_socket);
-        	}
+          if(( file_fd = open(&buffer[5],O_RDONLY)) == -1) 
+          {
+            log_print("failed to open file");
+            notFound(new_socket);
+          }
           else
           {
             (void)sprintf(buffer,"HTTP/1.0 200 OK\r\nContent-Type: %s\r\n\r\n",fstr);
@@ -273,7 +273,7 @@ int connection(int new_socket)
           #ifdef LINUX
             sleep(1);       /* to allow socket to drain */
           #endif
-		    }
+        }
       }  
       return 0;
 }
