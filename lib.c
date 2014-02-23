@@ -200,7 +200,8 @@ int connection(int new_socket, struct parameters* params)
           }
 
           if( !strncmp(&buffer[0],"GET /\0",6) || !strncmp(&buffer[0],"get /\0",6) )
-            (void)strcpy(buffer,"GET /site/index.html");
+            sprintf(buffer,"GET /site/%s", params->defPage);
+            //(void)strcpy(buffer,"GET /site/index.html");
           else
           {
             for (i=strlen(buffer);i>=0;i--)
